@@ -1,7 +1,7 @@
 export function sendParentEvent(event: string, data: any) {
   try {
     window.parent.postMessage(JSON.stringify({
-      source: 'qrtoolkit',
+      source: 'qrtoolkit-parent',
       event,
       data,
     }), '*')

@@ -1,6 +1,6 @@
 import { breakpointsTailwind } from '@vueuse/core'
 import type { QrCodeGenerateResult } from 'uqr'
-import type { ComparionState, GeneratedQRInfo, QRCodeGeneratorState, ScannerState, State } from './types'
+import type { ComparionState, GeneratedQRInfo, ProcessorState, QRCodeGeneratorState, ScannerState, State } from './types'
 
 export const isSafari = /^((?!chrome|android).)*safari/i.test(navigator.userAgent)
 export const isIOS = /iPad|iPhone|iPod/.test(navigator.userAgent)
@@ -13,6 +13,9 @@ export const hasParentWindow = ref<boolean>(false)
 export const qrcode = shallowRef<QrCodeGenerateResult>()
 export const dataUrlGeneratedQRCode = ref<string>()
 export const dataUrlScannerUpload = ref<string>()
+export const dataUrlProcessorUpload = ref<string>()
+export const dataUrlProcessed = ref<string>()
+
 export const dataUrlGeneratedSize = ref<number>(25)
 export const generateQRCodeInfo = ref<GeneratedQRInfo>()
 
@@ -103,11 +106,21 @@ export function defaultScannerState(): ScannerState {
   }
 }
 
+export function defaultProcessorState(): ProcessorState {
+  return {
+    prompt: '',
+    negativeprompt: '',
+    start: 0.2,
+    end: 0.8,
+  }
+}
+
 export function defaultState(): State {
   return {
     qrcode: defaultGeneratorState(),
     compare: defaultCompareState(),
     scanner: defaultScannerState(),
+    processor: defaultProcessorState(),
     uploaded: {
       image: undefined,
       qrcode: undefined,

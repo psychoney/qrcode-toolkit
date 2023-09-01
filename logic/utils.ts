@@ -1,4 +1,4 @@
-import { dataUrlGeneratedQRCode, qrcode } from './state'
+import { dataUrlGeneratedQRCode, dataUrlProcessorUpload, qrcode } from './state'
 import type { MarginObject, State } from './types'
 
 export function resolveMargin(margin: number | MarginObject) {
@@ -31,6 +31,13 @@ export function sendQRCodeToCompare(state: State) {
   const margin = resolveMargin(state.qrcode.margin)
   state.compare.gridSize = qrcode.value.size + margin.left + margin.right
   state.compare.gridMarginSize = Math.min(margin.left, margin.right, margin.top, margin.bottom)
+}
+
+export function sendQRCodeToProcessor(state: State) {
+  if (!dataUrlGeneratedQRCode.value || !qrcode.value)
+    return
+  state.uploaded.qrcode = dataUrlGeneratedQRCode.value
+  dataUrlProcessorUpload.value = dataUrlGeneratedQRCode.value
 }
 
 export function colorHexToRgb(hex: string) {

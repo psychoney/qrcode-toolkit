@@ -873,7 +873,7 @@ export async function generateQRCode(outCanvas: HTMLCanvasElement, state: QRCode
 }
 
 function createQrInstance(state: QRCodeGeneratorState) {
-  const qr = encode(state.text || 'qrcode.antfu.me', {
+  const qr = encode(state.text || 'gempoll.com', {
     minVersion: state.minVersion,
     maxVersion: state.maxVersion,
     ecc: state.ecc,

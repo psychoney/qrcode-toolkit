@@ -171,11 +171,19 @@ export interface ScannerState {
   cameraSampleDelay: number
 }
 
+export interface ProcessorState {
+  prompt: string
+  negativeprompt: string
+  start: number
+  end: number
+}
+
 export interface State {
   qrcode: QRCodeGeneratorState
   compare: ComparionState
   scanner: ScannerState
   uploaded: UploadState
+  processor: ProcessorState
 }
 
 export interface Segment {

@@ -1,7 +1,8 @@
+<!-- eslint-disable no-console -->
 <script setup lang="ts">
 import { deepMerge } from '@antfu/utils'
 import { sendParentEvent } from '~/logic/messaging'
-import { dataUrlScannerUpload, defaultState, hasParentWindow, isLargeScreen, showGridHelper, storeIndex } from '~/logic/state'
+import { dataUrlProcessorUpload, dataUrlScannerUpload, defaultState, hasParentWindow, isLargeScreen, showGridHelper, storeIndex } from '~/logic/state'
 import { view } from '~/logic/view'
 import type { State } from '~/logic/types'
 
@@ -27,8 +28,8 @@ useEventListener(window, 'message', (event) => {
     return
   try {
     const json = JSON.parse(data)
-    // eslint-disable-next-line no-console
-    console.log('Message from parent window', json)
+
+    // console.log('Message from parent window', json)
     if (json.source !== 'qrtoolkit-parent')
       return
     switch (json.event) {
@@ -41,6 +42,17 @@ useEventListener(window, 'message', (event) => {
         hasParentWindow.value = true
         dataUrlScannerUpload.value = json.data
         view.value = 'verify'
+        break
+      case 'setProcessorImage':
+        hasParentWindow.value = true
+        dataUrlProcessorUpload.value = json.data
+        view.value = 'processor'
+        break
+      case 'setCompareImage':
+        hasParentWindow.value = true
+        state.value.uploaded.image = json.data.image
+        state.value.uploaded.qrcode = json.data.qrcode
+        view.value = 'compare'
         break
       case 'init':
         hasParentWindow.value = true
@@ -72,6 +84,14 @@ onMounted(() => {
       Generator
     </button>
     <button
+      flex="~ gap-1.5  items-center" text-button
+      :class="view === 'processor' ? 'bg-secondary' : 'op50'"
+      @click="view = 'processor'"
+    >
+      <div i-ri-computer-line />
+      Processor
+    </button>
+    <button
       flex="~ gap-1.5 items-center" text-button
       :class="view === 'compare' ? 'bg-secondary' : 'op50'"
       @click="view = 'compare'"
@@ -97,7 +117,7 @@ onMounted(() => {
     </button>
     <div flex-auto />
     <div>
-      <a href="https://antfu.me" target="_blank" op75 hover:underline hover:op100>Anthony Fu</a><span op50>'s QR Toolkit</span>
+      <a href="https://gempoll.com" target="_blank" op75 hover:underline hover:op100>GEMPOLL</a><span op50> QR Toolkit</span>
     </div>
     <button
       flex="~ gap-1.5 items-center" ml2 text-sm text-button
@@ -110,6 +130,9 @@ onMounted(() => {
 
   <div v-show="view === 'generator'" w-full>
     <Generator :state="state" />
+  </div>
+  <div v-show="view === 'processor'" w-full>
+    <Processor :state="state" />
   </div>
   <div v-show="view === 'compare'" w-full>
     <div v-if="!isLargeScreen" flex px20 py50 text-center op50>

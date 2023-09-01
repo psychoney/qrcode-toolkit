@@ -1,12 +1,11 @@
 <script setup lang="ts">
 import { debounce } from 'perfect-debounce'
-import { sendParentEvent } from '~/logic/messaging'
 import { generateQRCode } from '~/logic/generate'
 import { dataUrlGeneratedQRCode, defaultGeneratorState, generateQRCodeInfo, hasParentWindow, isLargeScreen, qrcode } from '~/logic/state'
 import { view } from '~/logic/view'
 import type { State } from '~/logic/types'
 import { MarkerSubShapeIcons, MarkerSubShapes, PixelStyleIcons, PixelStyles } from '~/logic/types'
-import { getAspectRatio, sendQRCodeToCompare } from '~/logic/utils'
+import { getAspectRatio, sendQRCodeToCompare, sendQRCodeToProcessor } from '~/logic/utils'
 
 const props = defineProps<{
   state: State
@@ -124,8 +123,9 @@ function sendCompare() {
   view.value = 'compare'
 }
 
-function sendToWebUI() {
-  sendParentEvent('setControlNet', dataUrlGeneratedQRCode.value!)
+function sendToProcessor() {
+  sendQRCodeToProcessor(props.state)
+  view.value = 'processor'
 }
 
 function toggleMarkerStyleExpand() {
@@ -516,10 +516,10 @@ watch(
         <button
           v-if="hasParentWindow"
           py2 text-sm text-button
-          @click="sendToWebUI()"
+          @click="sendToProcessor()"
         >
           <div i-ri-file-upload-line />
-          Send to ControlNet
+          Send to Processor
         </button>
         <div v-if="mayNotScannable" border="~ amber-6/60 rounded" bg-amber-5:10 px3 py2 text-sm text-amber-6>
           This QR Code may or may not be scannable. Please verify before using.
