@@ -173,9 +173,7 @@ export interface ScannerState {
 
 export interface ProcessorState {
   prompt: string
-  negativeprompt: string
-  start: number
-  end: number
+  overlay: boolean
 }
 
 export interface State {

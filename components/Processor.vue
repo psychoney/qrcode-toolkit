@@ -1,11 +1,12 @@
+<!-- eslint-disable max-statements-per-line -->
 <!-- eslint-disable prefer-template -->
 <!-- eslint-disable no-import-assign -->
 <!-- eslint-disable no-console -->
 <script setup lang="ts">
-import type { ScanResult } from 'qr-scanner-wechat'
 import { ready } from 'qr-scanner-wechat'
 import { SelfBuildingSquareSpinner } from 'epic-spinners'
 import { v4 as uuidv4 } from 'uuid'
+import { debounce } from 'perfect-debounce'
 import { sendParentEvent } from '~/logic/messaging'
 import type { State } from '~/logic/types'
 import { dataUrlProcessed, dataUrlProcessorUpload } from '~/logic/state'
@@ -17,11 +18,13 @@ const props = defineProps<{
 
 const state = computed(() => props.state.processor)
 
-const result = ref<ScanResult>()
 const reading = ref(false)
 const loading = ref(true)
 const error = ref<any>()
 const generating = ref(false)
+const canvas = ref<HTMLCanvasElement>()
+const image = ref<HTMLImageElement>()
+const processedImg = ref<HTMLImageElement>()
 
 const dimension = ref<{
   upload?: {
@@ -49,10 +52,7 @@ onMounted(() => {
 function clear() {
   error.value = null
   reading.value = false
-  result.value = undefined
 }
-
-const image = ref<HTMLImageElement>()
 
 async function loadImage() {
   image.value = undefined
@@ -86,17 +86,66 @@ function compare() {
   view.value = 'compare'
 }
 
-function download() {
+async function download() {
+  if (!canvas.value)
+    return
   const a = document.createElement('a')
-  a.href = dataUrlProcessed.value!
+  if (!state.value.overlay)
+    a.href = dataUrlProcessed.value!
+  else
+    a.href = canvas.value.toDataURL()
+
   a.download = `${uuidv4()}.png`
   a.click()
 }
 
-function regenerate() {
-  dataUrlProcessed.value = ''
-  generate()
+async function initCanvas() {
+  // console.log('initCanvas')
+  // console.log('dataUrlProcessed value :', dataUrlProcessed.value)
+  // console.log('processedImg value :', processedImg.value)
+  if (!dataUrlProcessed.value || !processedImg.value)
+    return
+  processedImg.value.src = dataUrlProcessed.value
+  if (!image.value || !canvas.value || !dataUrlProcessed.value)
+    return
+  const c = canvas.value
+  c.width = processedImg.value.width
+  c.height = processedImg.value.height
+  console.log('c value :', c.width)
+  const ctx = c.getContext('2d')!
+  ctx.drawImage(processedImg.value, 0, 0)
+  if (!state.value.overlay)
+    return
+  const overlayImage = new Image()
+  overlayImage.src = image.value.src
+  await new Promise((resolve) => {
+    overlayImage.onload = resolve
+  })
+  ctx.globalAlpha = 0.30
+  ctx.globalCompositeOperation = 'overlay'
+  ctx.drawImage(overlayImage, 0, 0, c.width, c.height)
 }
+
+const debouncedRun = debounce(initCanvas, 100, { trailing: true })
+
+watch(
+  () => [dataUrlProcessed.value, state.value.overlay],
+  () => debouncedRun(),
+  { deep: true, immediate: true },
+)
+
+watch(
+  () => dataUrlProcessed.value,
+  async (i) => {
+    if (!i)
+      return
+    const img = new Image()
+    img.src = i
+    await new Promise(resolve => img.onload = resolve)
+    processedImg.value = img
+  },
+  { immediate: true },
+)
 
 async function generate() {
   if (!dataUrlProcessorUpload.value)
@@ -115,8 +164,6 @@ async function generate() {
   })
   const imageBase64 = await response.json()
   dataUrlProcessed.value = imageBase64
-  // await sleep(3000)
-  // dataUrlProcessed.value =''
 
   generating.value = false
   const img = new Image()
@@ -184,8 +231,18 @@ const { isOverDropZone } = useDropZone(document.body, {
         </div>
 
         <!-- Original Image -->
-        <img v-if="dataUrlProcessed" :src="dataUrlProcessed" alt="Processed Image" class="h-full w-full object-contain">
+        <canvas ref="canvas" w-full />
 
+        <!-- <img v-if="dataUrlProcessed" :src="dataUrlProcessed" alt="Processed Image" class="h-full w-full object-contain">
+        <img
+          v-if="dataUrlProcessorUpload && state.overlay"
+          :src="dataUrlProcessorUpload"
+          absolute inset-0 h-full w-full object-cover
+          :style="{
+            opacity: 0.14,
+            mixBlendMode: 'normal',
+          }"
+        > -->
         <!-- Prohibited Icon -->
         <div v-if="!dataUrlProcessorUpload" i-ri-prohibited-line ma text-4xl op20 />
       </div>
@@ -237,14 +294,9 @@ const { isOverDropZone } = useDropZone(document.body, {
           <div i-ri-compasses-2-line />
           Compare
         </button>
-        <button
-          text-sm op75 text-button hover:op100
-          :disabled="generating"
-          @click="regenerate()"
-        >
-          <div i-ri-refresh-line />
-          Regenerate
-        </button>
+        <OptionItem title="Overlay" style="width: 50px">
+          <OptionCheckbox v-model="state.overlay" class="mt-0" />
+        </OptionItem>
       </div>
     </template>
 
