@@ -73,7 +73,10 @@ async function loadImage() {
 }
 
 function verify() {
-  sendParentEvent('setScannerImage', dataUrlProcessed.value!)
+  if (!state.value.overlay)
+    sendParentEvent('setScannerImage', dataUrlProcessed.value!)
+  else
+    sendParentEvent('setScannerImage', canvas.value!.toDataURL())
   view.value = 'verify'
 }
 
@@ -113,6 +116,7 @@ async function initCanvas() {
   c.height = processedImg.value.height
   console.log('c value :', c.width)
   const ctx = c.getContext('2d')!
+  ctx.clearRect(0, 0, c.width, c.height)
   ctx.drawImage(processedImg.value, 0, 0)
   if (!state.value.overlay)
     return
@@ -122,7 +126,7 @@ async function initCanvas() {
     overlayImage.onload = resolve
   })
   ctx.globalAlpha = 0.30
-  ctx.globalCompositeOperation = 'overlay'
+  ctx.globalCompositeOperation = 'lighten'
   ctx.drawImage(overlayImage, 0, 0, c.width, c.height)
 }
 
